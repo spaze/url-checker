@@ -1,0 +1,29 @@
+{
+	"name": "spaze/url-checker",
+	"description": "A command line tool to check URL HTTP code and contents.",
+	"license": "MIT",
+	"type": "project",
+	"require-dev": {
+        "spaze/coding-standard": "^1.9",
+        "spaze/phpcs-phar": "^4.0",
+        "phpunit/phpunit": "^12.0 || ^13.0",
+        "phpstan/phpstan": "^2.1"
+    },
+	"autoload": {
+		"psr-4": {"Spaze\\UrlChecker\\": "src"}
+	},
+	"autoload-dev": {
+		"classmap": ["tests"]
+	},
+	"scripts": {
+		"phpcs": "vendor/bin/phpcs src/ tests/ bin/",
+		"cs-fix": "vendor/bin/phpcbf src/ tests/ bin/",
+		"phpstan": "vendor/bin/phpstan --ansi analyse --configuration phpstan.neon",
+		"phpunit": "php -d zend.assertions=1 vendor/bin/phpunit --colors=always",
+		"test": [
+			"@phpcs",
+			"@phpstan",
+			"@phpunit"
+		]
+	}
+}

@@ -1,0 +1,9 @@
+parameters:
+	paths:
+		- src
+		- tests
+		- bin
+	level: max
+
+includes:
+	- vendor/phpstan/phpstan/conf/bleedingEdge.neon
