@@ -17,8 +17,8 @@ $usageError = function (string $message): void {
 	exit(UrlChecker::EXIT_RUNTIME_ERROR);
 };
 
-if ($_SERVER['argc'] !== 5) {
-	$usageError('Usage: check.php <url> <expected_http_code> <required_text> <forbidden_text>');
+if ($_SERVER['argc'] < 5) {
+	$usageError("Usage: check.php <url> <expected_http_code> <required_text> <forbidden_text> [OPTIONS]\nOptions:\n--ignore-case-required-text\n--ignore-case-forbidden-text");
 }
 
 if (!is_array($_SERVER['argv']) || !array_is_list($_SERVER['argv'])) {
@@ -26,6 +26,7 @@ if (!is_array($_SERVER['argv']) || !array_is_list($_SERVER['argv'])) {
 }
 
 [, $url, $expectedCodeInput, $requiredText, $forbiddenText] = $_SERVER['argv'];
+$options = array_slice($_SERVER['argv'], 5);
 
 if (!is_string($url) || !is_string($expectedCodeInput) || !is_string($requiredText) || !is_string($forbiddenText)) {
 	$usageError('Parameters must be strings');
@@ -40,6 +41,8 @@ $checker = new UrlChecker(
 	(int)$expectedCodeInput,
 	$requiredText,
 	$forbiddenText,
+	in_array('--ignore-case-required-text', $options, true),
+	in_array('--ignore-case-forbidden-text', $options, true),
 );
 
 $result = $checker->check($url);

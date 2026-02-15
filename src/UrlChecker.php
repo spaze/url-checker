@@ -18,9 +18,10 @@ final readonly class UrlChecker
 	public function __construct(
 		private HttpClientInterface $httpClient,
 		private int $expectedCode,
-		private string $requiredText = '',
-		private string $forbiddenText = '',
-		private int $timeout = 30,
+		private string $requiredText,
+		private string $forbiddenText,
+		private bool $ignoreCaseRequiredText,
+		private bool $ignoreCaseForbiddenText,
 	) {
 	}
 
@@ -36,7 +37,7 @@ final readonly class UrlChecker
 		}
 
 		try {
-			$response = $this->httpClient->get($url, $this->timeout);
+			$response = $this->httpClient->get($url, 30);
 		} catch (Throwable $e) {
 			return new UrlCheckResult(
 				false,
@@ -55,7 +56,7 @@ final readonly class UrlChecker
 
 		if (
 			$this->requiredText !== '' &&
-			!str_contains($response->body, $this->requiredText)
+			!$this->contains($response->body, $this->requiredText, $this->ignoreCaseRequiredText)
 		) {
 			return new UrlCheckResult(
 				false,
@@ -66,7 +67,7 @@ final readonly class UrlChecker
 
 		if (
 			$this->forbiddenText !== '' &&
-			str_contains($response->body, $this->forbiddenText)
+			$this->contains($response->body, $this->forbiddenText, $this->ignoreCaseForbiddenText)
 		) {
 			return new UrlCheckResult(
 				false,
@@ -76,6 +77,15 @@ final readonly class UrlChecker
 		}
 
 		return new UrlCheckResult(true, self::EXIT_OK, "{$url} status {$this->expectedCode}, contains '{$this->requiredText}', doesn't contain '{$this->forbiddenText}'");
+	}
+
+
+	private function contains(string $haystack, string $needle, bool $ignoreCase): bool
+	{
+		if ($ignoreCase) {
+			return stripos($haystack, $needle) !== false;
+		}
+		return str_contains($haystack, $needle);
 	}
 
 }

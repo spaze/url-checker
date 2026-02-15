@@ -16,6 +16,8 @@ final class UrlCheckerTest extends TestCase
 		int $expectedCode,
 		string $requiredText,
 		string $forbiddenText,
+		bool $ignoreCaseRequiredText,
+		bool $ignoreCaseForbiddenText,
 	): UrlChecker {
 		$fakeClient = new readonly class ($statusCode, $body) implements HttpClientInterface {
 
@@ -38,23 +40,15 @@ final class UrlCheckerTest extends TestCase
 			$expectedCode,
 			$requiredText,
 			$forbiddenText,
+			$ignoreCaseRequiredText,
+			$ignoreCaseForbiddenText,
 		);
-	}
-
-
-	public function testSuccess(): void
-	{
-		$checker = $this->createChecker(200, 'Hello World', 200, 'Hello', 'Fatal');
-		$result = $checker->check('https://example.com/');
-
-		$this->assertTrue($result->success);
-		$this->assertSame(UrlChecker::EXIT_OK, $result->exitCode);
 	}
 
 
 	public function testHttpMismatch(): void
 	{
-		$checker = $this->createChecker(500, 'Error', 200, 'Required', 'Forbidden');
+		$checker = $this->createChecker(500, 'Error', 200, 'Required', 'Forbidden', false, false);
 		$result = $checker->check('https://example.com/');
 
 		$this->assertFalse($result->success);
@@ -62,9 +56,39 @@ final class UrlCheckerTest extends TestCase
 	}
 
 
+	public function testRequiredTextFound(): void
+	{
+		$checker = $this->createChecker(200, 'Hello World', 200, 'Hello', 'Fatal', false, false);
+		$result = $checker->check('https://example.com/');
+
+		$this->assertTrue($result->success);
+		$this->assertSame(UrlChecker::EXIT_OK, $result->exitCode);
+	}
+
+
+	public function testRequiredTextFoundIgnoreCaseRequired(): void
+	{
+		$checker = $this->createChecker(200, 'Hello World', 200, 'hello', 'Fatal', true, false);
+		$result = $checker->check('https://example.com/');
+
+		$this->assertTrue($result->success);
+		$this->assertSame(UrlChecker::EXIT_OK, $result->exitCode);
+	}
+
+
 	public function testRequiredTextMissing(): void
 	{
-		$checker = $this->createChecker(200, 'Hello World', 200, 'MissingText', '');
+		$checker = $this->createChecker(200, 'Hello World', 200, 'MissingText', '', false, false);
+		$result = $checker->check('https://example.com/');
+
+		$this->assertFalse($result->success);
+		$this->assertSame(UrlChecker::EXIT_REQUIRED_TEXT_MISSING, $result->exitCode);
+	}
+
+
+	public function testRequiredTextMissingCaseSensitiveRequired(): void
+	{
+		$checker = $this->createChecker(200, 'Hello World', 200, 'hello', '', false, false);
 		$result = $checker->check('https://example.com/');
 
 		$this->assertFalse($result->success);
@@ -74,11 +98,31 @@ final class UrlCheckerTest extends TestCase
 
 	public function testForbiddenTextFound(): void
 	{
-		$checker = $this->createChecker(200, 'Fatal error occurred', 200, '', 'Fatal');
+		$checker = $this->createChecker(200, 'Fatal error occurred', 200, '', 'Fatal', false, false);
 		$result = $checker->check('https://example.com/');
 
 		$this->assertFalse($result->success);
 		$this->assertSame(UrlChecker::EXIT_FORBIDDEN_TEXT_FOUND, $result->exitCode);
+	}
+
+
+	public function testForbiddenTextFoundIgnoreCaseForbidden(): void
+	{
+		$checker = $this->createChecker(200, 'Fatal error occurred', 200, '', 'FaTaL', false, true);
+		$result = $checker->check('https://example.com/');
+
+		$this->assertFalse($result->success);
+		$this->assertSame(UrlChecker::EXIT_FORBIDDEN_TEXT_FOUND, $result->exitCode);
+	}
+
+
+	public function testForbiddenTextNotFoundCaseSensitiveForbidden(): void
+	{
+		$checker = $this->createChecker(200, 'Fatal error occurred', 200, '', 'FaTaL', false, false);
+		$result = $checker->check('https://example.com/');
+
+		$this->assertTrue($result->success);
+		$this->assertSame(UrlChecker::EXIT_OK, $result->exitCode);
 	}
 
 
@@ -96,6 +140,10 @@ final class UrlCheckerTest extends TestCase
 		$checker = new UrlChecker(
 			$fakeClient,
 			200,
+			'',
+			'',
+			false,
+			false,
 		);
 
 		$result = $checker->check('https://example.com/');
